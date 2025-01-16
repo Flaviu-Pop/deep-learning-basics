@@ -1,25 +1,25 @@
-import copy
 import torch
 import torch.nn as nn
 import numpy as np
 import pandas as pd
 import time
+import copy
 
-from sklearn.preprocessing import LabelEncoder
+from sklearn.preprocessing import LabelEncoder, OneHotEncoder, StandardScaler
 from sklearn.compose import ColumnTransformer
-from sklearn.preprocessing import OneHotEncoder
 from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import StandardScaler
 
 
 pd.set_option('display.max_columns', None)
-
 
 path = 'Churn_Modelling.csv'
 dataset = pd.read_csv(path)
 
 
-########################################### ----- DATA STATISTICS ----- ################################################
+# ---------------------------
+# ----- DATA STATISTICS -----
+# ---------------------------
+
 print('\n\n\nThe first ten rows\observations are:\n')
 print(dataset.head(10))
 
@@ -30,7 +30,8 @@ print("\n\n\nThe Object Datatypes are:\n")
 print(dataset.dtypes)
 
 num_zeros = (dataset[['RowNumber', 'CustomerId', 'CreditScore', 'Age', 'Tenure',
-                      'Balance', 'NumOfProducts', 'HasCrCard', 'IsActiveMember', 'EstimatedSalary', 'Exited']] == 0).sum()
+                      'Balance', 'NumOfProducts', 'HasCrCard', 'IsActiveMember', 'EstimatedSalary',
+                      'Exited']] == 0).sum()
 print("\n\n\nThe number of zeros from each column:\n")
 print(num_zeros)
 
@@ -38,11 +39,13 @@ print('\n\n\nThe number of NaN for each column is:\n')
 print(dataset.isnull().sum())
 
 
-####################################### ----- DATA PRE-PRPCESSING ----- ################################################
-# We teke the Descriptive Features and Target Feature, respectively
-X = dataset.iloc[:, 3:-1].values  #Descriptive Feature == Independent Variable
-y = dataset.iloc[:, -1].values    #Target Feature == Dependent Variable
+# -------------------------------
+# ----- DATA PRE-PROCESSING -----
+# -------------------------------
 
+# We teke the Descriptive Features and Target Feature, respectively
+X = dataset.iloc[:, 3:-1].values  # Descriptive Feature == Independent Variable
+y = dataset.iloc[:, -1].values  # Target Feature == Dependent Variable
 
 # We make the corresponding encodings
 # Encoding the "Gender" column ----- LabelEncoder()
@@ -53,23 +56,19 @@ X[:, 2] = le.fit_transform(X[:, 2])
 ct = ColumnTransformer(transformers=[('encoder', OneHotEncoder(), [1])], remainder='passthrough')
 X = np.array(ct.fit_transform(X))
 
-
 # We split the Dataset into Training Set and Test Set, respectively
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=0)
-
 
 # We do Feature Scaling
 sc = StandardScaler()
 X_train = sc.fit_transform(X_train)
 X_test = sc.fit_transform(X_test)
 
-
 # We convert the datasets into (PyTorch) Tensors
 X_train = torch.FloatTensor(X_train)
 X_test = torch.FloatTensor(X_test)
 y_train = torch.Tensor(y_train)
 y_test = torch.Tensor(y_test)
-
 
 print("\n\n\nThe shapes are:")
 print(f"X_train: {X_train.size()}")
@@ -78,7 +77,10 @@ print(f"y_train: {y_train.size()}")
 print(f"y_test has: {y_test.size()}")
 
 
-#########################################  THE ARCHITECTURE --- FCNN ###################################################
+# -----------------------------
+# ----- THE ARCHITECTURE ------
+# -----------------------------
+
 class FFNN_BinaryClassification(nn.Module):
     def __init__(self):
         super().__init__()
@@ -93,7 +95,6 @@ class FFNN_BinaryClassification(nn.Module):
         self.relu4 = torch.nn.ReLU()
         self.linearLayer5 = torch.nn.Linear(in_features=100, out_features=1)
         self.sigmoid = torch.nn.Sigmoid()
-
 
     def forward(self, x):
         x = self.linearLayer1(x)
@@ -114,7 +115,10 @@ class FFNN_BinaryClassification(nn.Module):
         return x
 
 
-###################################### THE TRAINING PROCEDURE ##########################################################
+# ----------------------------------
+# ----- THE TRAINING PROCEDURE -----
+# ----------------------------------
+
 # Set the GPU if available
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
@@ -129,7 +133,7 @@ def compute_accuracy(model, inputs, labels):
     inputs = inputs.to(device)
     labels = labels.to(device)
 
-    model.eval() # Set the model to evaluation mode
+    model.eval()  # Set the model to evaluation mode
 
     outputs = model(inputs)
     outputs = torch.round(outputs)
@@ -140,16 +144,16 @@ def compute_accuracy(model, inputs, labels):
 
     total_correct = (outputs == labels).sum()
 
-    return total_correct/reshape_index_0
+    return total_correct / reshape_index_0
 
 
 def train(model, train_inputs, train_labels, test_inputs, test_labels, batch_size, num_epochs, criterion, optimizer):
     print("\n\n\n--- Now: The Training Process ---\n")
 
     # We split the Train Set into Training and Validation Sets, respectively
-    train_inputs, val_inputs, train_labels, val_labels = train_test_split(train_inputs, train_labels, test_size=0.2, random_state=0)
+    train_inputs, val_inputs, train_labels, val_labels = train_test_split(train_inputs, train_labels, test_size=0.2,
+                                                                          random_state=0)
     print(f"Training Set size = {(train_inputs.size())[0]} --- Validation Set size = {(val_inputs.size())[0]}")
-
 
     # Set the model/data to GPU if available
     model = model.to(device)
@@ -166,13 +170,13 @@ def train(model, train_inputs, train_labels, test_inputs, test_labels, batch_siz
     for epoch in range(num_epochs):
         start_time = time.perf_counter()
 
-        model.train()   # Set the model to training mode
+        model.train()  # Set the model to training mode
 
         total_loss = 0
         for start_batch in batches:
             # Take a batch
-            batch_inputs = train_inputs[start_batch : start_batch + batch_size]
-            batch_labels = train_labels[start_batch : start_batch + batch_size]
+            batch_inputs = train_inputs[start_batch: start_batch + batch_size]
+            batch_labels = train_labels[start_batch: start_batch + batch_size]
 
             # Forward and Backward Passes
             optimizer.zero_grad()
@@ -194,7 +198,9 @@ def train(model, train_inputs, train_labels, test_inputs, test_labels, batch_siz
         end_time = time.perf_counter()
         epoch_time = end_time - start_time
 
-        print(f"Epoch = {epoch + 1} ===> Loss = {total_loss: .3f} ===> Time = {epoch_time: .3f} ===> Validation Accuracy = {validation_accuracy: .4f}  ===> Best Accuracy = {best_accuracy: .4f} at Epoch {best_epoch}")
+        print(f"Epoch = {epoch + 1} ===> Loss = {total_loss: .3f} ===> Time = {epoch_time: .3f} ===> "
+              f"Validation Accuracy = {validation_accuracy: .4f}  ===> Best Accuracy = {best_accuracy: .4f} at "
+              f"Epoch {best_epoch}")
 
     # Set the model('s weights) with the best accuracy
     model.load_state_dict(best_weights)
@@ -204,7 +210,10 @@ def train(model, train_inputs, train_labels, test_inputs, test_labels, batch_siz
     print(f"\nThe Test Accuracy of the Final Models is: {final_accuracy: .4f}")
 
 
-################################################# ---  MAIN() ---  #####################################################
+# ------------------------------
+# ----- MAIN() -----------------
+# ------------------------------
+
 ffnn = FFNN_BinaryClassification()
 
 batch_size = 10
@@ -212,13 +221,16 @@ number_of_epochs = 50
 criterion = torch.nn.BCELoss()
 optimizer = torch.optim.Adam(ffnn.parameters(), lr=0.001)
 
-train(model=ffnn, train_inputs=X_train, train_labels=y_train, test_inputs=X_test, test_labels=y_test, batch_size=batch_size, num_epochs=number_of_epochs, criterion=criterion, optimizer=optimizer)
+train(model=ffnn, train_inputs=X_train, train_labels=y_train, test_inputs=X_test, test_labels=y_test,
+      batch_size=batch_size, num_epochs=number_of_epochs, criterion=criterion, optimizer=optimizer)
 
+# --------------------------------
+# ----- PREDICTION/INFERENCE -----
+# --------------------------------
 
-##################################### -----  PREDICTION/INFERENCE ----- ################################################
 print("\n\n\n----- Now: We do some predictions, some inference -----")
 
-ffnn.eval() # Set the model to evaluation mode
+ffnn.eval()  # Set the model to evaluation mode
 
 prediction_01 = ffnn(torch.FloatTensor(sc.transform([[1, 0, 0, 600, 1, 40, 3, 60000, 2, 1, 1, 50000]])))
 print("\nThe probability is: " + str(prediction_01.item()))
