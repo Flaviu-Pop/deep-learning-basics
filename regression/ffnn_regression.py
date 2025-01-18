@@ -82,7 +82,7 @@ print(f"y_test has: {y_test.size()}")
 # ----- THE ARCHITECTURE ------
 # -----------------------------
 
-class FFNN_Regression(nn.Module):
+class FfnnRegression(nn.Module):
     def __init__(self):
         super().__init__()
 
@@ -159,14 +159,14 @@ def train(model, train_inputs, train_labels, test_inputs, test_labels, batch_siz
         end_time = time.perf_counter()
         epoch_time = end_time - start_time
 
-        print(f"Epoch = {epoch + 1} ===> Loss = {total_loss: .3f} ===> Time = {epoch_time: .3f}")
+        print(f"Epoch = {epoch + 1} ===> Loss = {total_loss: .4f} ===> Time = {epoch_time: .2f}")
 
 
 # -------------------------------
 # ----- MAIN() ------------------
 # -------------------------------
 
-ffnn = FFNN_Regression()
+ffnn = FfnnRegression()
 
 batch_size = 10
 number_of_epochs = 150
@@ -176,25 +176,34 @@ optimizer = torch.optim.Adam(ffnn.parameters(), lr=0.001)
 train(model=ffnn, train_inputs=X_train, train_labels=y_train, test_inputs=X_test, test_labels=y_test,
       batch_size=batch_size, num_epochs=number_of_epochs, criterion=criterion, optimizer=optimizer)
 
+
 # --------------------------------
 # ----- PREDICTION/INFERENCE -----
 # --------------------------------
-
 print("\n\n\n----- Now we do some Inference --- some Prediction -----")
 
 ffnn.eval()
 
-prediction_01 = ffnn(torch.FloatTensor(scaler.transform([[0, 0, 0, 1, 19, 0, 27.9, 0, 1]])))
-print("\nThe prediction is: " + str(sc.inverse_transform(prediction_01.detach()).item()) +
-      " --- The true value/label is: 16884.92400" + " --- So the difference is: " +
-      str(sc.inverse_transform(prediction_01.detach()).item() - 16884.92400))
 
-prediction_02 = ffnn(torch.FloatTensor(scaler.transform([[0, 1, 0, 0, 60, 0, 25.84, 0, 0]])))
-print("\nThe prediction is: " + str(sc.inverse_transform(prediction_02.detach()).item()) +
-      " --- The true value/label is: 28923.13692" + " --- So the difference is: " +
-      str(sc.inverse_transform(prediction_02.detach()).item() - 28923.13692))
+def make_prediction(model, input):
+    input = torch.FloatTensor(scaler.transform(input))
 
-prediction_03 = ffnn(torch.FloatTensor(scaler.transform([[1, 0, 0, 0, 37, 1, 29.83, 2, 0]])))
-print("\nThe prediction is: " + str(sc.inverse_transform(prediction_03.detach()).item()) +
-      " --- The true value/label is: 6406.41070" + " --- So the difference is: " +
-      str(sc.inverse_transform(prediction_03.detach()).item() - 6406.41070))
+    model.eval()
+    prediction = model(input)
+
+    prediction = sc.inverse_transform(prediction.detach()).item()
+    print(f"\nThe prediction is: {prediction: .2f}.")
+    return prediction
+
+
+X = [[0, 0, 0, 1, 19, 0, 27.9, 0, 1]]
+prediction = make_prediction(ffnn, X)
+print(f"The true value is {16884.92400}. The difference is: {prediction - 16884.92400: .2f}.")
+
+X = [[0, 1, 0, 0, 60, 0, 25.84, 0, 0]]
+prediction = make_prediction(ffnn, X)
+print(f"The true value is {28923.13692}. The difference is: {prediction - 28923.13692: .2f}.")
+
+X = [[1, 0, 0, 0, 37, 1, 29.83, 2, 0]]
+prediction = make_prediction(ffnn, X)
+print(f"The true value is {6406.41070}. The difference is: {prediction - 6406.41070: .2f}.")

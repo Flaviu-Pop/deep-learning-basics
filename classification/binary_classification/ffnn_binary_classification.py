@@ -9,12 +9,10 @@ from sklearn.preprocessing import LabelEncoder, OneHotEncoder, StandardScaler
 from sklearn.compose import ColumnTransformer
 from sklearn.model_selection import train_test_split
 
-
 pd.set_option('display.max_columns', None)
 
 path = 'Churn_Modelling.csv'
 dataset = pd.read_csv(path)
-
 
 # ---------------------------
 # ----- DATA STATISTICS -----
@@ -37,7 +35,6 @@ print(num_zeros)
 
 print('\n\n\nThe number of NaN for each column is:\n')
 print(dataset.isnull().sum())
-
 
 # -------------------------------
 # ----- DATA PRE-PROCESSING -----
@@ -81,7 +78,7 @@ print(f"y_test has: {y_test.size()}")
 # ----- THE ARCHITECTURE ------
 # -----------------------------
 
-class FFNN_BinaryClassification(nn.Module):
+class FfnnBinaryClassification(nn.Module):
     def __init__(self):
         super().__init__()
 
@@ -125,8 +122,6 @@ device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
 def compute_accuracy(model, inputs, labels):
     # It computes the accuracy of the <model> on the dataset <inputs,labels>
-
-    total_correct = 0
 
     # Set the model/data to GPU is available
     model = model.to(device)
@@ -205,7 +200,6 @@ def train(model, train_inputs, train_labels, test_inputs, test_labels, batch_siz
     # Set the model('s weights) with the best accuracy
     model.load_state_dict(best_weights)
 
-    print("\n\n\nJust checking ...")
     final_accuracy = compute_accuracy(model, test_inputs, test_labels)
     print(f"\nThe Test Accuracy of the Final Models is: {final_accuracy: .4f}")
 
@@ -214,7 +208,7 @@ def train(model, train_inputs, train_labels, test_inputs, test_labels, batch_siz
 # ----- MAIN() -----------------
 # ------------------------------
 
-ffnn = FFNN_BinaryClassification()
+ffnn = FfnnBinaryClassification()
 
 batch_size = 10
 number_of_epochs = 50
@@ -232,51 +226,52 @@ print("\n\n\n----- Now: We do some predictions, some inference -----")
 
 ffnn.eval()  # Set the model to evaluation mode
 
-prediction_01 = ffnn(torch.FloatTensor(sc.transform([[1, 0, 0, 600, 1, 40, 3, 60000, 2, 1, 1, 50000]])))
-print("\nThe probability is: " + str(prediction_01.item()))
-print("The answer is: " + str((prediction_01 > 0.5).item()))
 
-prediction_02 = ffnn(torch.FloatTensor(sc.transform([[1, 0, 0, 619, 0, 42, 2, 0, 1, 1, 1, 101348.88]])))
-print("\nThe probability is: " + str(prediction_02.item()))
-print("The answer is: " + str((prediction_02 > 0.5).item()))
-print("The true label is: <exit = 1>")
+def make_prediction(model, input):
+    input = torch.FloatTensor(sc.transform(input))
+    model.eval()
+    prediction = model(input)
+    probab = prediction.item()
+    pred = (prediction > 0.5).item()
+    print(f"\nThe probability is: {probab} and the class predicted is: {pred}")
+    return pred
 
-prediction_03 = ffnn(torch.FloatTensor(sc.transform([[0, 0, 1, 608, 0, 41, 1, 83807.86, 1, 0, 1, 112542.58]])))
-print("\nThe probability is: " + str(prediction_03.item()))
-print("The answer is: " + str((prediction_03 > 0.5).item()))
-print("The true label is: <exit = 0>")
 
-prediction_04 = ffnn(torch.FloatTensor(sc.transform([[1, 0, 0, 502, 0, 42, 8, 159660.80, 3, 1, 0, 113931.57]])))
-print("\nThe probability is: " + str(prediction_04.item()))
-print("The answer is: " + str((prediction_04 > 0.5).item()))
-print("The true label is: <exit = 1>")
+X = [[1, 0, 0, 619, 0, 42, 2, 0, 1, 1, 1, 101348.88]]
+prediction = make_prediction(ffnn, X)
+print("It must be: true")
 
-prediction_05 = ffnn(torch.FloatTensor(sc.transform([[0, 1, 0, 653, 1, 58, 1, 132602.90, 1, 1, 0, 5097.67]])))
-print("\nThe probability is: " + str(prediction_05.item()))
-print("The answer is: " + str((prediction_05 > 0.5).item()))
-print("The true label is: <exit = 1>")
+X = [[0, 0, 1, 608, 0, 41, 1, 83807.86, 1, 0, 1, 112542.58]]
+make_prediction(ffnn, X)
+print("It must be: false")
 
-prediction_06 = ffnn(torch.FloatTensor(sc.transform([[1, 0, 0, 411, 1, 29, 0, 59697.17, 2, 1, 1, 53483.21]])))
-print("\nThe probability is: " + str(prediction_06.item()))
-print("The answer is: " + str((prediction_06 > 0.5).item()))
-print("The true label is: <exit = 0>")
+X = [[1, 0, 0, 502, 0, 42, 8, 159660.80, 3, 1, 0, 113931.57]]
+make_prediction(ffnn, X)
+print("It must be: true")
 
-prediction_07 = ffnn(torch.FloatTensor(sc.transform([[0, 0, 1, 591, 0, 39, 3, 0, 3, 1, 0, 140469.4]])))
-print("\nThe probability is: " + str(prediction_07.item()))
-print("The answer is: " + str((prediction_07 > 0.5).item()))
-print("The true label is: <exit = 1>")
+X = [[0, 1, 0, 653, 1, 58, 1, 132602.90, 1, 1, 0, 5097.67]]
+make_prediction(ffnn, X)
+print("It must be: true")
 
-prediction_08 = ffnn(torch.FloatTensor(sc.transform([[0, 1, 0, 585, 1, 36, 5, 146051, 2, 0, 0, 86424.57]])))
-print("\nThe probability is: " + str(prediction_08.item()))
-print("The answer is: " + str((prediction_08 > 0.5).item()))
-print("The true label is: <exit = 0>")
+X = [[1, 0, 0, 411, 1, 29, 0, 59697.17, 2, 1, 1, 53483.21]]
+make_prediction(ffnn, X)
+print("It must be: false")
 
-prediction_09 = ffnn(torch.FloatTensor(sc.transform([[0, 1, 0, 655, 1, 41, 8, 125562, 1, 0, 0, 164040.9]])))
-print("\nThe probability is: " + str(prediction_09.item()))
-print("The answer is: " + str((prediction_09 > 0.5).item()))
-print("The true label is: <exit = 1>")
+X = [[0, 0, 1, 591, 0, 39, 3, 0, 3, 1, 0, 140469.4]]
+make_prediction(ffnn, X)
+print("It must be: true")
 
-prediction_10 = ffnn(torch.FloatTensor(sc.transform([[1, 0, 0, 646, 0, 46, 4, 0, 3, 1, 0, 93251.42]])))
-print("\nThe probability is: " + str(prediction_10.item()))
-print("The answer is: " + str((prediction_10 > 0.5).item()))
-print("The true label is: <exit = 1>")
+X = [[0, 1, 0, 585, 1, 36, 5, 146051, 2, 0, 0, 86424.57]]
+make_prediction(ffnn, X)
+print("It must be: false")
+
+X = [[0, 1, 0, 655, 1, 41, 8, 125562, 1, 0, 0, 164040.9]]
+make_prediction(ffnn, X)
+print("It must be true")
+
+X = [[1, 0, 0, 646, 0, 46, 4, 0, 3, 1, 0, 93251.42]]
+make_prediction(ffnn, X)
+print("It must be true")
+
+X = [[1, 0, 0, 600, 1, 40, 3, 60000, 2, 1, 1, 50000]]
+make_prediction(ffnn, X)

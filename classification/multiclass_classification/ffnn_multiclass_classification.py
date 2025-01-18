@@ -76,7 +76,7 @@ print(f"y_test has: {y_test.size()}")
 # ----- THE ARCHITECTURE ------
 # -----------------------------
 
-class FFNN_MultiClassClassification(nn.Module):
+class FfnnMultiClassClassification(nn.Module):
     def __init__(self):
         super().__init__()
 
@@ -201,7 +201,7 @@ def train(model, train_inputs, train_labels, test_inputs, test_labels, batch_siz
 # -----  MAIN() -------
 # ---------------------
 
-ffnn = FFNN_MultiClassClassification()
+ffnn = FfnnMultiClassClassification()
 
 batch_size = 10
 number_of_epochs = 50
@@ -214,25 +214,30 @@ train(model=ffnn, train_inputs=X_train, train_labels=y_train, test_inputs=X_test
 # --------------------------------
 # ----- PREDICTION/INFERENCE -----
 # --------------------------------
-
 print("\n\n\n----- Now we do some Inference --- some Prediction -----")
 
 ffnn.eval()
 
-prediction_01 = ffnn(torch.FloatTensor(scaler.transform(
-    [[10, 43.2, 50.1, 4.3, 5, 2.77, 7.3, 24.2, 87.7, 26.3, 30.1, 189, 12.5, 0.17]])))
-print("\nThe probabilities are: " + str(prediction_01))
-print("The answer is: " + str((torch.argmax(prediction_01)).item() + 1))
-print("The true label is: <index class = 6>")
 
-prediction_02 = ffnn(torch.FloatTensor(scaler.transform(
-    [[7.2, 30.7, 60.7, 2.2, 4.4, 3.97, 9, 30.5, 77, 22.6, 29.5, 148, 14.3, 0.14]])))
-print("\nThe probabilities are: " + str(prediction_02))
-print("The answer is: " + str((torch.argmax(prediction_02)).item() + 1))
-print("The true label is: <index class = 2>")
+def make_prediction(model, input):
+    input = torch.FloatTensor(scaler.transform(input))
 
-prediction_03 = ffnn(torch.FloatTensor(scaler.transform(
-    [[5.2, 19.7, 72.4, 1, 3.8, 4.85, 13.2, 41, 84.7, 27.2, 32.1, 181, 10, 0.15]])))
-print("\nThe probabilities are: " + str(prediction_03))
-print("The answer is: " + str((torch.argmax(prediction_03)).item() + 1))
-print("The true label is: <index class = 1>")
+    model.eval()
+    prediction = model(input)
+
+    class_predicted = (torch.argmax(prediction)).item() + 1
+    print(f"\nThe probabilities are: {prediction}. \nThe class predicted is: {class_predicted}")
+    return class_predicted
+
+
+X = [[10, 43.2, 50.1, 4.3, 5, 2.77, 7.3, 24.2, 87.7, 26.3, 30.1, 189, 12.5, 0.17]]
+make_prediction(ffnn, X)
+print("The true class = 6")
+
+X = [[7.2, 30.7, 60.7, 2.2, 4.4, 3.97, 9, 30.5, 77, 22.6, 29.5, 148, 14.3, 0.14]]
+make_prediction(ffnn, X)
+print("The true class = 2")
+
+X = [[5.2, 19.7, 72.4, 1, 3.8, 4.85, 13.2, 41, 84.7, 27.2, 32.1, 181, 10, 0.15]]
+make_prediction(ffnn, X)
+print("The true class = 1")
